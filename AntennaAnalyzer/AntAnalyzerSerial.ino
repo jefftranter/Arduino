@@ -33,7 +33,8 @@ void tfr_byte(byte data)
 }
 
 // Frequency calculation from datasheet page 8 = <sys clock> * <frequency tuning word> / 2^32
-void sendFrequency(double frequency) {
+void sendFrequency(double frequency)
+{
     int32_t freq = frequency * 0xffffffff / 125000000;  // Note 125 MHz clock on 9850
     for (int b = 0; b < 4; b++, freq >>= 8) {
         tfr_byte(freq & 0xFF);
@@ -42,7 +43,8 @@ void sendFrequency(double frequency) {
     pulseHigh(FQ_UD);  // Done!  Should see output
 }
 
-void setup() {
+void setup()
+{
     // Configure Arduino data pins for output
     pinMode(FQ_UD, OUTPUT);
     pinMode(W_CLK, OUTPUT);
@@ -56,7 +58,8 @@ void setup() {
     Serial.begin(9600);
  }
 
-void loop() {
+void loop()
+{
     int incomingByte = 0;   // For incoming serial data
     bool RunCurve = false;
   
@@ -80,8 +83,8 @@ void loop() {
     }
 }
 
-//*******************************************************//
-bool PrintNextPoint(bool RunCurve){
+bool PrintNextPoint(bool RunCurve)
+{
     double FWD = 0.0;
     double REV = 0.0;
     double VSWR;
@@ -118,7 +121,7 @@ bool PrintNextPoint(bool RunCurve){
     else
         EffOhms = 50.0 / VSWR;
 
-    // Send current line back to PC over serial bus
+    // Send current line back to PC over serial bus.
     // e.g. Freq: 2150 kHz SWR: 1.00 Fwd: 119.93 Rev: 0.00 RevOffSet: 0 FwdOffSet: 0 Ohms: 50.00
     Serial.print("Freq: ");
     Serial.print(int(current_freq / 1000));
@@ -136,7 +139,7 @@ bool PrintNextPoint(bool RunCurve){
     Serial.print(EffOhms);
     Serial.println("");
 
-    // Use these lines instead of above if you want simple CSV output of just frequency and SWR
+    // Use these lines instead of above if you want simple CSV output of just frequency and SWR.
     // e.g. 7.00,1.03
     //Serial.print(current_freq / 1000000);
     //Serial.print(",");
@@ -146,7 +149,8 @@ bool PrintNextPoint(bool RunCurve){
     return RunCurve;
 }
 
-double CorrectReading(float ReadVal) {
+double CorrectReading(float ReadVal)
+{
     if (ReadVal > 70)
         return 0.8 * ReadVal + 57;
 

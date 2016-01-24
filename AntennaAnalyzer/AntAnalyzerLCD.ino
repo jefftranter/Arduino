@@ -51,7 +51,8 @@ void tfr_byte(byte data)
 }
 
 // Frequency calculation from datasheet page 8 = <sys clock> * <frequency tuning word> / 2^32
-void sendFrequency(double frequency) {
+void sendFrequency(double frequency)
+{
     int32_t freq = frequency * 0xffffffff / 125000000;  // Note 125 MHz clock on 9850
     for (int b = 0; b < 4; b++, freq >>= 8) {
         tfr_byte(freq & 0xFF);
@@ -60,7 +61,8 @@ void sendFrequency(double frequency) {
     pulseHigh(FQ_UD);  // Done!  Should see output
 }
 
-void setup() {
+void setup()
+{
     // Configure Arduino data pins for output
     pinMode(FQ_UD, OUTPUT);
     pinMode(W_CLK, OUTPUT);
@@ -74,7 +76,8 @@ void setup() {
     mySerial.begin(19200);
  }
 
-void loop() {
+void loop()
+{
     int incomingByte = 0;   // For incoming serial data
     bool RunCurve = true;
   
@@ -98,8 +101,8 @@ void loop() {
     }
 }
 
-//*******************************************************//
-bool PrintNextPoint(bool RunCurve){
+bool PrintNextPoint(bool RunCurve)
+{
     double FWD = 0.0;
     double REV = 0.0;
     double VSWR;
@@ -154,7 +157,8 @@ bool PrintNextPoint(bool RunCurve){
     return RunCurve;
 }
 
-double CorrectReading(float ReadVal) {
+double CorrectReading(float ReadVal)
+{
     if (ReadVal > 70)
         return 0.8 * ReadVal + 57;
 
