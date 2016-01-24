@@ -1,0 +1,14 @@
+These are sketches for a homebrew antenna analyzer.
+
+Based on code originally by J M Harvey.
+See https://github.com/jmharvey1/DDS_AD9850_AntennaAnalyzer
+
+Programs:
+
+AntAnalyzerSerial.ino: Measures SWR etc. over a range of frequencies,
+outputs parameters to serial port. Can also output in CSV format
+suitable for importing into a spreadsheet.
+
+AntAnalyzerLCD.ino: Measures SWR etc. over a range of frequencies,
+outputs to a 2x16 serial LCD connected to pins using software serial
+library.
