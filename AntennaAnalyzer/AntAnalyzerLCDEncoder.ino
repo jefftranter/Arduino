@@ -100,8 +100,9 @@ void loop()
     }
 
     // See if knob was turned. If so, adjust frequency up or down by a step.
+    // Look for change of at least two to make it less sensitive.
     position = encoder.read();
-    if (position != lastPosition) {
+    if (abs(position - lastPosition) >= 2) {
         if (position > lastPosition) {
             frequency += step;
         } else {
@@ -111,12 +112,9 @@ void loop()
      }
 
     // Check frequency is in range 1 Hz to 40 MHz
-    if (frequency < 0) {
-        frequency = 0;
-    } else if (frequency > 40000000) {
-        frequency = 40000000;
-    }
+    frequency = constrain(frequency, 0, 40000000);
 
+    // Calculate and display SWR
     PrintSWR(frequency);
 }
 
@@ -131,8 +129,8 @@ void PrintSWR(double frequency)
     delay(100);
     // Read the forward and reverse voltages. Average over Readings readings.
     for (int i = 0; i < readings; i++) {
-         REV += analogRead(A0);
-         FWD += analogRead(A1);
+        REV += analogRead(A0);
+        FWD += analogRead(A1);
     }
 
     REV = REV / (double)readings; // Compensate for reading multiple times.
@@ -188,5 +186,5 @@ void PrintSWR(double frequency)
     lcd.print(VSWR, 1);
     lcd.print(" ");
     lcd.print(EffOhms,1);
-    lcd.print("\xF4");
+    lcd.print("\xF4"); // Ohms symbol
 }
