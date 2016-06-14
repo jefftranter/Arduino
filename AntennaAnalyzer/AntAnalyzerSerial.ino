@@ -6,18 +6,18 @@
  *
  */
  
-#define W_CLK 8       // Pin 8  - connect to AD9850 module word load clock pin (CLK)
-#define FQ_UD 9       // Pin 9  - connect to freq update pin (FQ)
-#define DATA 10       // Pin 10 - connect to serial data load pin (DATA)
-#define RESET 11      // Pin 11 - connect to reset pin (RST)
+#define W_CLK 8        // Pin 8  - connect to AD9850 module word load clock pin (CLK)
+#define FQ_UD 9        // Pin 9  - connect to freq update pin (FQ)
+#define DATA 10        // Pin 10 - connect to serial data load pin (DATA)
+#define RESET 11       // Pin 11 - connect to reset pin (RST)
  
 #define pulseHigh(pin) { digitalWrite(pin, HIGH); digitalWrite(pin, LOW); }
 
-double Start_Freq =  7000000; // Start frequency in Hz
-double End_Freq   =  7300000; // End frequency in Hz
-double Step_Freq  =    10000; // Step frequency in Hz
+double start_Freq =  7000000; // Start frequency in Hz
+double end_Freq   =  7300000; // End frequency in Hz
+double step_Freq  =    10000; // Step frequency in Hz
 double current_freq;          // Current frequency
-int Readings = 50;            // Number of readings to average over.
+const int readings = 50;      // Number of readings to average over.
 
 // Transfers a byte, a bit at a time, LSB first to the 9850 via serial DATA line.
 void tfr_byte(byte data)
@@ -50,7 +50,7 @@ void setup()
     pulseHigh(RESET);
     pulseHigh(W_CLK);
     pulseHigh(FQ_UD);  // This pulse enables serial mode - datasheet page 12 figure 10
-    current_freq = Start_Freq;
+    current_freq = start_Freq;
     Serial.begin(9600);
  }
 
@@ -70,20 +70,20 @@ bool PrintNextPoint()
     double REV = 0.0;
     double VSWR;
     double EffOhms;
-    if (current_freq > End_Freq) {
-        current_freq = Start_Freq;
+    if (current_freq > end_Freq) {
+        current_freq = start_Freq;
         return true;
     }
     sendFrequency(current_freq);  // Frequency
     delay(100);
     // Read the forward and reverse voltages. Average over Readings readings.
-    for (int i = 0; i < Readings; i++) {
+    for (int i = 0; i < readings; i++) {
          REV += analogRead(A0);
          FWD += analogRead(A1);
     }
 
-    REV = REV / (double)Readings; // Compensate for reading multiple times.
-    FWD = FWD / (double)Readings;
+    REV = REV / (double)readings; // Compensate for reading multiple times.
+    FWD = FWD / (double)readings;
     //Serial.print("FWD="); Serial.print(FWD);
     //Serial.print(" REV="); Serial.println(REV);
     REV = sqrt(REV);
@@ -128,6 +128,6 @@ bool PrintNextPoint()
     //Serial.print(",");
     //Serial.println(EffOhms);
 
-    current_freq += Step_Freq;
+    current_freq += step_Freq;
     return false;
 }
