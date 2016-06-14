@@ -22,6 +22,9 @@ double frequency = 7000000; // Current frequency in Hertz
 long step = 1000000;        // Current step in Hertz
 int position;               // Encoder position
 int lastPosition;           // Previous encoder position
+double lastVSWR = 0;        // Previous SWR value
+double lastEffOhms = 0;     // Previous Ohms value
+bool changed;               // Set when results changed and display needs to be updated
 
 SoftwareSerial lcd(6, 7);   // RX, TX pins for serial LCD
 Encoder encoder(2, 3);      // Rotary encoder
@@ -59,20 +62,22 @@ void setup()
     pulseHigh(FQ_UD);     // This pulse enables serial mode - datasheet page 12 figure 10
 
     lcd.begin(19200);    // Serial LCD
-    Serial.begin(9600);  // Serial port to computer
+    //Serial.begin(9600);  // Serial port to computer
 
     pinMode(BUTTON, INPUT_PULLUP); // Encoder switch, enable pullup
 
     position = encoder.read(); // Get initial encoder position
     lastPosition = position;
 
-    lcd.print("\nAntenna Analyzer"); // Startup message
+    lcd.print("\fAntenna Analyzer"); // Startup message
     lcd.print(__DATE__);
     delay(1000);
  }
 
 void loop()
 {
+    changed = false;
+
     // See if encoder button pressed. If so, change frequency step.
     if (digitalRead(BUTTON) == 0) {
         switch (step) {
@@ -93,9 +98,10 @@ void loop()
             break;
         }
         // Display new step
-        lcd.print("\nStep: ");
+        lcd.print("\fStep: ");
         lcd.print(step/1000);
-        lcd.println(" kHz");
+        lcd.print(" kHz");
+        changed = true;
         delay(1000);
     }
 
@@ -109,9 +115,10 @@ void loop()
             frequency -= step;
         }
         lastPosition = position;
+        changed = true;
      }
 
-    // Check frequency is in range 1 Hz to 40 MHz
+    // Ensure frequency is in range 0 Hz to 40 MHz
     frequency = constrain(frequency, 0, 40000000);
 
     // Calculate and display SWR
@@ -145,11 +152,23 @@ void PrintSWR(double frequency)
         // Calculate VSWR
         VSWR = (FWD + REV) / (FWD - REV);
     }
+
+    // Only refresh display if reading changed.
+    if (labs(VSWR - lastVSWR) > 0.01) {
+        changed = true;
+        lastVSWR = VSWR;
+    }
+
     if (FWD > 24) // Experimentally found this was point of lowest/matched SWR
         EffOhms = VSWR * 50.0;
     else
         EffOhms = 50.0 / VSWR;
 
+    // Only refresh display if reading changed.
+    if (labs(EffOhms - lastEffOhms) > 0.01) {
+        changed = true;
+        lastEffOhms = EffOhms;
+    }
     // Send current line back to PC over serial bus.
     // e.g.
     // Freq: 7160 kHz Fwd: 24.21 Rev: 5.92 SWR: 1.65 Ohms: 82.39
@@ -180,11 +199,13 @@ void PrintSWR(double frequency)
     // Display on 2x16 serial LCD
     // Freq 7050 kHz
     // SWR 1.6 82.3Ω
-    lcd.print("\nFreq ");
-    lcd.print(long(frequency / 1000));
-    lcd.print(" kHz\nSWR ");
-    lcd.print(VSWR, 1);
-    lcd.print(" ");
-    lcd.print(EffOhms,1);
-    lcd.print("\xF4"); // Ohms symbol
+    if (changed) {
+        lcd.print("\fFreq ");
+        lcd.print(long(frequency / 1000));
+        lcd.print(" kHz\nSWR ");
+        lcd.print(VSWR, 1);
+        lcd.print(" ");
+        lcd.print(EffOhms,1);
+        lcd.print("\xF4"); // Ohms symbol
+    }
 }
