@@ -12,3 +12,50 @@ suitable for importing into a spreadsheet.
 AntAnalyzerLCD.ino: Measures SWR etc. over a range of frequencies,
 outputs to a 2x16 serial LCD connected to pins using software serial
 library.
+
+AntAnalyzerLCDEncoder.ino: Measures SWR at a specific frequency.
+Outputs to a 2x16 serial LCD connected to pins using software serial
+library. Can set frequency using rotary encoder with switch.
+
+PARTS LIST:
+
+ATMEGA328 programmed with Arduino boot loader.
+KY-040 Optical Rotary encoder with switch.
+AD9850 DDS module.
+2X16 Serial LCD 5V TTL level.
+FTDI board (e.g. AdaFruit or RobotShop) set for 5V.
+
+WIRING OF FINAL DESIGN:
+
+Arduino  Arduino  Signal
+Pin #    Signal   Name
+-------  -------  ------
+  1      RESET    Reset switch circuit
+  2      D0/RX    FTDI TX pin (when programming)
+  3      D1/TX    FTDI RX pin (when programming)
+  4      D2       Rotary Encoder DT pin
+  5      D3       Rotary Encoder CLK pin
+  6      D4       unused
+  7      VCC      +5V
+  8      GND      Ground
+  9      XTAL1    16 MHz crystal, 22pF cap to ground
+ 10      XTAL2    16 MHz crystal, 22pF cap to ground
+ 11      D5       unused
+ 12      D6       Serial LCD TX (not connected)
+ 13      D7       Serial LCD RX
+ 14      D8       AD9850 WCLK
+
+ 15      D9       AD9850 FQUP
+ 16      D10      AD9850 D7
+ 17      D11      AD9850 RST
+ 18      D12      Rotary encoder SW pin
+ 19      D13      LED to ground via 200 ohm resistor
+ 20      AVCC     +5V
+ 21      AREF     +5V
+ 22      GND      Ground
+ 23      A0       SWR circuit REV
+ 24      A1       SWR circuit FWD
+ 25      A2       unused
+ 26      A3       unused
+ 27      A4       unused
+ 28      A5       unused
