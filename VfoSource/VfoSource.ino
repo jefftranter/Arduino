@@ -89,9 +89,9 @@ int incrementIndex = 0;
 long oldRitOffset;
 int_fast32_t oldFrequency = 1;    // variable to hold the updated frequency
 
-static char *bandWarnings[]     = {"Extra  ", "Tech   ", "General"};
+static const char *bandWarnings[] = {"Extra  ", "Tech   ", "General"};
 static int whichLicense;
-static char *incrementStrings[] = {"10", "20", "100", ".5", "1", "2.5", "5", "10", "100"};     // These two allign
+static const char *incrementStrings[] = {"10", "20", "100", ".5", "1", "2.5", "5", "10", "100"};     // These two allign
 static  long incrementTable[]   = { 10,   20,   100,   500, 1000, 2500, 5000, 10000, 100000};
 static  long memory[]           = {VFOLOWERFREQUENCYLIMIT, VFOUPPERFREQUENCYLIMIT};
 
@@ -280,12 +280,12 @@ void tfr_byte(byte data)
 {
   for (int i = 0; i < 8; i++, data >>= 1) {
     digitalWrite(DATA, data & 0x01);
-    pulseHigh(W_CLK);   //after each bit sent, CLK is pulsed high
+    pulseHigh(W_CLK);   // After each bit sent, CLK is pulsed high
   }
 }
 
 /*****
-  This method is used to format a frequency on the lcd display. The currentFrequqncy variable holds the display
+  This method is used to format a frequency on the lcd display. The currentFrequency variable holds the display
   frequency.
 
   Argument list:
@@ -294,7 +294,7 @@ void tfr_byte(byte data)
   Return value:
     void
 *****/
-void DisplayLCDLine(char *message, int row, int col)
+void DisplayLCDLine(const char *message, int row, int col)
 {
   lcd.setCursor(col, row);
   lcd.print(message);
@@ -437,7 +437,7 @@ int DoRangeCheck()
   Return value:
     void
 *****/
-void ShowMarker(char *c)
+void ShowMarker(const char *c)
 {
   lcd.setCursor(9, 1);
   lcd.print(c);
@@ -481,11 +481,9 @@ void ProcessSteps()
 *****/
 void Splash()
 {
-
   lcd.setCursor(0, 0);
-  lcd.print("40M Pieces-Parts");
-  lcd.setCursor(3, 1);
-  lcd.print("Transceiver");
+  lcd.print("Arduino Forty9er");
+  lcd.setCursor(0, 1);
+  lcd.print(__DATE__);
   delay(SPLASHDELAY);
 }
-
