@@ -6,7 +6,7 @@
    Rev 4.00:  Feb. 2, 2015
    Rev 5.00:  Jul. 8, 2015, Jack Purdum
    Rev 6.00:  Aug. 1, 2015, Jack Purdum
-   
+
    Tested with Arduino IDE V-1.6.5
 */
 
@@ -20,7 +20,7 @@
 // in the Arduino library folder
 #include <LiquidCrystal_I2C.h>
 
-#define MYTUNINGCONSTANT     34.35910479585483    // Replace with your calculated TUNING CONSTANT. See article
+#define MYTUNINGCONSTANT     34.35977000000000    // Replace with your calculated TUNING CONSTANT. See article
 
 #define SPACES      "                "
 #define HERTZ       "Hz"
@@ -35,7 +35,7 @@
                                                     // of elements in an array.
 #define pulseHigh(pin) {digitalWrite(pin, HIGH); digitalWrite(pin, LOW); } // Write macro
 
-//Setup some VFO band edges
+// Set up some VFO band edges
 #define VFOUPPERFREQUENCYLIMIT  7300000L            // Upper band edge
 #define VFOLOWERFREQUENCYLIMIT  7000000L            // Lower band edge
 #define VFOLOWALLBUTEXTRA       7025000L            // Frequency of Extra licensees only
@@ -43,11 +43,10 @@
 #define VFOLOWTECH              7100000L            // Low Tech cutoff
 #define VFOGENERALLOWGAP        7175000L            // General class edge
 
-
 #define W_CLK             8               // Pin  8 - connect to AD9850 module word load clock pin (CLK)
 #define FQ_UD             9               // Pin  9 - connect to freq update pin (FQ)
 #define DATA             10               // Pin 10 - connect to serial data load pin (DATA)
-#define RESET            11               // Pin 11 - connect to reset pin (RST) 
+#define RESET            11               // Pin 11 - connect to reset pin (RST)
 
 #define LCDCOLS          16               // LCD stuff
 #define LCDROWS           2
@@ -91,9 +90,9 @@ int_fast32_t oldFrequency = 1;    // variable to hold the updated frequency
 
 static const char *bandWarnings[] = {"Extra  ", "Tech   ", "General"};
 static int whichLicense;
-static const char *incrementStrings[] = {"10", "20", "100", ".5", "1", "2.5", "5", "10", "100"};     // These two allign
-static  long incrementTable[]   = { 10,   20,   100,   500, 1000, 2500, 5000, 10000, 100000};
-static  long memory[]           = {VFOLOWERFREQUENCYLIMIT, VFOUPPERFREQUENCYLIMIT};
+static const char *incrementStrings[] = {"10", "20", "100", ".5", "1", "2.5", "5", "10", "100" }; // These two align
+static long incrementTable[]   = { 10, 20, 100, 500, 1000, 2500, 5000, 10000, 100000 };
+static long memory[]           = { VFOLOWERFREQUENCYLIMIT, VFOUPPERFREQUENCYLIMIT };
 
 Rotary r = Rotary(2, 3);       // Create encoder object and set the pins the rotary encoder uses.  Must be interrupt pins.
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // Create LCD object and set the LCD I2C address
@@ -118,16 +117,14 @@ void setup() {
 
   pinMode(ROTARYSWITCHPIN, INPUT_PULLUP);
   pinMode(RITPIN, INPUT_PULLUP);
-  //digitalWrite(RITPIN, INPUT_PULLUP);
   pinMode(RXTXPIN, INPUT_PULLUP);     // Start in RX mode
 
   oldRitState = ritState = LOW;       // Receiver incremental tuning state HIGH, LOW
   ritOffset = RITOFFSETSTART;         // Default RIT offset
   ritDisplaySwitch = 0;
 
- // lcd.begin(LCDCOLS, LCDROWS);        // Display LCD
- lcd.init();
- lcd.backlight();
+  lcd.init();
+  lcd.backlight();
   Splash();                           // Tell 'em were here...
 
   PCICR |= (1 << PCIE2);              // Interrupt service code
@@ -380,14 +377,14 @@ void writeEEPROMRecord(unsigned long freq, int record)
 void NewShowFreq(int row, int col) {
   char part[10];
   dtostrf( (float) currentFrequency, 7,0, temp);
-  
+
   strcpy(part, &temp[1]);
   strcpy(temp, "7.");
   strcat(temp, part);
   strcpy(part, &temp[5]);
   temp[5] = '.';
   strcpy(&temp[6], part);
-  strcat(temp, " "); 
+  strcat(temp, " ");
   strcat(temp, MEGAHERTZ);
   lcd.setCursor(col, row);
   lcd.print(SPACES);
@@ -411,7 +408,7 @@ int DoRangeCheck()
   if (currentFrequency <= VFOLOWERFREQUENCYLIMIT || currentFrequency >= VFOUPPERFREQUENCYLIMIT) {
     return FREQOUTOFBAND;
   }
-  //Setup some VFO band edges
+  // Set up some VFO band edges
   if (currentFrequency <= VFOLOWALLBUTEXTRA) {
     whichLicense = EXTRA;
   }
@@ -444,7 +441,7 @@ void ShowMarker(const char *c)
 }
 
 /*****
-  This method is used to change the number of hertz associated with one click of the rotary encoder. Ten step
+  This method is used to change the number of Hertz associated with one click of the rotary encoder. Ten step
   levels are provided and increasing or decreasing beyonds the array limits rolls around to the start/end
   of the array.
 
