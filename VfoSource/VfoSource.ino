@@ -20,7 +20,7 @@
 // in the Arduino library folder
 #include <LiquidCrystal_I2C.h>
 
-#define MYTUNINGCONSTANT     34.35977000000000    // Replace with your calculated TUNING CONSTANT. See article
+#define MYTUNINGCONSTANT     34.35977500000000    // Replace with your calculated TUNING CONSTANT. See article
 
 #define SPACES      "                "
 #define HERTZ       "Hz"
@@ -88,7 +88,8 @@ int incrementIndex = 0;
 long oldRitOffset;
 int_fast32_t oldFrequency = 1;    // variable to hold the updated frequency
 
-static const char *bandWarnings[] = {"Extra  ", "Tech   ", "General"};
+//static const char *bandWarnings[] = {"Extra  ", "Tech   ", "General"};
+static const char *bandWarnings[]   = {"Ext", "Tec", "Gen"};
 static int whichLicense;
 static const char *incrementStrings[] = {"10", "20", "100", ".5", "1", "2.5", "5", "10", "100" }; // These two align
 static long incrementTable[]   = { 10, 20, 100, 500, 1000, 2500, 5000, 10000, 100000 };
@@ -198,6 +199,7 @@ void loop() {
     oldRitState = ritState;
     ritDisplaySwitch = 0;
   }
+  Voltmeter();
 }
 
 void DoRitDisplay()
@@ -436,7 +438,7 @@ int DoRangeCheck()
 *****/
 void ShowMarker(const char *c)
 {
-  lcd.setCursor(9, 1);
+  lcd.setCursor(13, 1);
   lcd.print(c);
 }
 
@@ -483,4 +485,38 @@ void Splash()
   lcd.setCursor(0, 1);
   lcd.print(__DATE__);
   delay(SPLASHDELAY);
+}
+
+/*****
+This method is used to read the value from the R7, R8, C7 voltage divider circuit going to pin 26/A7 of the Arduino, process the required calculations, then display the voltage on the LCD.
+14 June 2016 by Hank Ellis K5HDE.
+*****/
+
+void Voltmeter()
+{
+  float input_voltage = 0.0; // The end result we want to display
+  float temp = 0.0;          // Temporary number used in calculations
+  float r7 = 20000.0;        // Value of R7
+  float r8 = 8000.0;         // Arbitrary value assigned to R8. Intent is to provide a 3.5 voltage divider.
+
+  static unsigned long volt_last_update = millis();  // Record when the last voltage display was updated
+  static unsigned long DELTA_TIME_LOOP = 1000;       // Time between voltage display updates
+
+  //#define VOLT_LOW_WARNING  = 11.3 // For future expansion
+  //#define VOLT_LOW_CAUTION  = 11.5
+  //#define VOLT_HIGH_CAUTION = 12.5
+  //#define VOLT_HIGH_WARNING = 12.8
+ 
+  if ((millis() - volt_last_update) > DELTA_TIME_LOOP) // If the time since last update has elapsed
+  {
+    int analog_value = analogRead(A7);       // Read the value from the voltage divider on pin A7
+    temp = (analog_value * 5.0) / 1023.0;    // Convert it to a usable number
+    input_voltage = temp / (r8 / (r7 + r8)); // Formula of a voltage divider circuit
+
+    lcd.setCursor(7, 1); // Display the result
+    lcd.print(input_voltage, 1);
+    lcd.print("V");
+
+    volt_last_update = millis(); // Set the update time
+  }
 }
