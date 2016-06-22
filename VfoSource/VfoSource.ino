@@ -53,7 +53,7 @@
 
 #define LCDCOLS          16               // LCD stuff
 #define LCDROWS           2
-#define SPLASHDELAY    4000               // Hold splash screen for 4 seconds
+#define SPLASHDELAY    2000               // Hold splash screen for 2 seconds
 
 #define ROTARYSWITCHPIN   4               // Used by switch for rotary encoder
 #define RITPIN            8               // Used by push button switch to toggle RIT
@@ -125,7 +125,7 @@ void setup() {
 
   pinMode(ROTARYSWITCHPIN, INPUT_PULLUP);
   pinMode(RITPIN, INPUT_PULLUP);
-  pinMode(RXTXPIN, INPUT_PULLUP);     // Start in RX mode
+  pinMode(13, OUTPUT); // Controls On-board LED
 
   oldRitState = ritState = LOW;       // Receiver incremental tuning state HIGH, LOW
   ritOffset = RITOFFSETSTART;         // Default RIT offset
@@ -158,6 +158,9 @@ void loop() {
   static int oldState = 1;
 
   int flag;
+
+  // Set Arduino on board LED to status of T/R pin to indicate transmit.
+  digitalWrite(13, !digitalRead(RXTXPIN));
 
   state = digitalRead(ROTARYSWITCHPIN);    // See if they pressed encoder switch
   ritState = digitalRead(RITPIN);          // Also check RIT button
