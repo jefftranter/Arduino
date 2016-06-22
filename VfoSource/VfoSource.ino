@@ -10,6 +10,9 @@
    Tested with Arduino IDE V-1.6.5
 */
 
+// Uncomment next line if you want the Voltmeter display option enabled.
+#define VOLTMETER
+
 #include <Rotary.h>   // From Brian Low: https://github.com/brianlow/Rotary
 #include <EEPROM.h>   // Shipped with IDE
 #include <Wire.h>     //         "
@@ -82,18 +85,22 @@ bool oldRitState;
 
 char temp[17];
 
-int ritDisplaySwitch;             // variable to index into increment arrays (see below)
+int ritDisplaySwitch;             // Variable to index into increment arrays (see below)
 int incrementIndex = 0;
 
 long oldRitOffset;
-int_fast32_t oldFrequency = 1;    // variable to hold the updated frequency
+int_fast32_t oldFrequency = 1;    // Variable to hold the updated frequency
 
-//static const char *bandWarnings[] = {"Extra  ", "Tech   ", "General"};
-static const char *bandWarnings[]   = {"Ext", "Tec", "Gen"};
+#ifdef VOLTMETER
+static const char *bandWarnings[] = { "Ext", "Tec", "Gen" };
+#else
+static const char *bandWarnings[] = { "Extra  ", "Tech   ", "General" };
+#endif
+
 static int whichLicense;
 static const char *incrementStrings[] = {"10", "20", "100", ".5", "1", "2.5", "5", "10", "100" }; // These two align
-static long incrementTable[]   = { 10, 20, 100, 500, 1000, 2500, 5000, 10000, 100000 };
-static long memory[]           = { VFOLOWERFREQUENCYLIMIT, VFOUPPERFREQUENCYLIMIT };
+static long incrementTable[]          = { 10,   20,   100,  500, 1000, 2500, 5000, 10000, 100000 };
+static long memory[]                  = { VFOLOWERFREQUENCYLIMIT, VFOUPPERFREQUENCYLIMIT };
 
 Rotary r = Rotary(2, 3);       // Create encoder object and set the pins the rotary encoder uses.  Must be interrupt pins.
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // Create LCD object and set the LCD I2C address
@@ -199,7 +206,9 @@ void loop() {
     oldRitState = ritState;
     ritDisplaySwitch = 0;
   }
+#ifdef VOLTMETER
   Voltmeter();
+#endif
 }
 
 void DoRitDisplay()
@@ -221,7 +230,7 @@ void DoRitDisplay()
 }
 
 
-                        // Original interrupt service routine, as modified by Jack
+// Original interrupt service routine, as modified by Jack
 ISR(PCINT2_vect) {
   unsigned char result = r.process();
 
@@ -492,6 +501,7 @@ This method is used to read the value from the R7, R8, C7 voltage divider circui
 14 June 2016 by Hank Ellis K5HDE.
 *****/
 
+#ifdef VOLTMETER
 void Voltmeter()
 {
   float input_voltage = 0.0; // The end result we want to display
@@ -520,3 +530,4 @@ void Voltmeter()
     volt_last_update = millis(); // Set the update time
   }
 }
+#endif
