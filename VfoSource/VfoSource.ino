@@ -2,16 +2,22 @@
   The heart of the code that manages the AD9850 was written by
   Richard Visokey AD7C - www.ad7c.com
 
- Modifications were made by Jack Purdum and Dennis Kidder:
+  Modifications were made by Jack Purdum and Dennis Kidder:
    Rev 4.00:  Feb. 2, 2015
    Rev 5.00:  Jul. 8, 2015, Jack Purdum
    Rev 6.00:  Aug. 1, 2015, Jack Purdum
 
-   Tested with Arduino IDE V-1.6.5
+  This version has additional changes by Jeff Tranter and Hank Ellis.
+
+  Tested with Arduino IDE V-1.6.9
 */
 
 // Uncomment next line if you want the Voltmeter display option enabled.
 #define VOLTMETER
+// Uncomment next line if you want the Arduino LED to indicate transmit.
+#define TXLED
+// Uncomment next line if you want the LCD display to indicate transmit.
+#define TXLCD
 
 #include <Rotary.h>   // From Brian Low: https://github.com/brianlow/Rotary
 #include <EEPROM.h>   // Shipped with IDE
@@ -125,8 +131,9 @@ void setup() {
 
   pinMode(ROTARYSWITCHPIN, INPUT_PULLUP);
   pinMode(RITPIN, INPUT_PULLUP);
-  pinMode(13, OUTPUT); // Controls On-board LED
-
+#ifdef TXLED
+  pinMode(13, OUTPUT);                // Controls on-board LED
+#endif
   oldRitState = ritState = LOW;       // Receiver incremental tuning state HIGH, LOW
   ritOffset = RITOFFSETSTART;         // Default RIT offset
   ritDisplaySwitch = 0;
@@ -160,7 +167,19 @@ void loop() {
   int flag;
 
   // Set Arduino on board LED to status of T/R pin to indicate transmit.
+#ifdef TXLED
   digitalWrite(13, !digitalRead(RXTXPIN));
+#endif
+
+#ifdef TXLCD
+  // Indicate transmit on LCD with *
+  lcd.setCursor(0, 0);
+  if (!digitalRead(RXTXPIN)) {
+      lcd.print("*");
+  } else {
+      lcd.print(" ");
+  }
+#endif
 
   state = digitalRead(ROTARYSWITCHPIN);    // See if they pressed encoder switch
   ritState = digitalRead(RITPIN);          // Also check RIT button
