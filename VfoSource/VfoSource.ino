@@ -7,7 +7,16 @@
    Rev 5.00:  Jul. 8, 2015, Jack Purdum
    Rev 6.00:  Aug. 1, 2015, Jack Purdum
 
-  This version has additional changes by Jeff Tranter and Hank Ellis.
+  This version has additional changes by Hank Ellis K5HDE:
+  V1.0 14 June 2016 Implementation of the basic voltmeter
+  V1.1 23 June 2016 Fixed bug that blanks the voltmeter when the frequency step is changed via the encoder pushbutton
+
+  This version has additional changes by Jeff Tranter VE3ICH:
+  - Indicate transmit on Arduino LED.
+  - Indicate transmit on LCD.
+  - Modified startup screen.
+  - Make options configurable at compile time.
+  - Small code formatting changes and cleanup (e.g. fix compile warnings)
 
   Tested with Arduino IDE V-1.6.9
 */
@@ -31,10 +40,10 @@
 
 #define MYTUNINGCONSTANT     34.35977500000000    // Replace with your calculated TUNING CONSTANT. See article
 
-#define SPACES      "                "
-#define HERTZ       "Hz"
-#define KILOHERTZ   "kHz"
-#define MEGAHERTZ   "MHz"
+#define SPACES      "       " // Altered in V1.1 of Voltmeter implementation
+#define HERTZ       "Hz "
+#define KILOHERTZ   "kHz "
+#define MEGAHERTZ   "MHz "
 
 #define GENERAL     2
 #define TECH        1
@@ -98,7 +107,7 @@ long oldRitOffset;
 int_fast32_t oldFrequency = 1;    // Variable to hold the updated frequency
 
 #ifdef VOLTMETER
-static const char *bandWarnings[] = { "Ext", "Tec", "Gen" };
+static const char *bandWarnings[] = { "Ext", "Tec", "Gen" }; // Altered in V1.0 of voltmeter implementation
 #else
 static const char *bandWarnings[] = { "Extra  ", "Tech   ", "General" };
 #endif
@@ -469,7 +478,7 @@ int DoRangeCheck()
 *****/
 void ShowMarker(const char *c)
 {
-  lcd.setCursor(13, 1);
+  lcd.setCursor(13, 1); // Altered in V1.0 of Voltmeter implementation
   lcd.print(c);
 }
 
@@ -534,11 +543,6 @@ void Voltmeter()
   static unsigned long volt_last_update = millis();  // Record when the last voltage display was updated
   static unsigned long DELTA_TIME_LOOP = 1000;       // Time between voltage display updates
 
-  //#define VOLT_LOW_WARNING  = 11.3 // For future expansion
-  //#define VOLT_LOW_CAUTION  = 11.5
-  //#define VOLT_HIGH_CAUTION = 12.5
-  //#define VOLT_HIGH_WARNING = 12.8
- 
   if ((millis() - volt_last_update) > DELTA_TIME_LOOP) // If the time since last update has elapsed
   {
     int analog_value = analogRead(A7);       // Read the value from the voltage divider on pin A7
@@ -547,7 +551,7 @@ void Voltmeter()
 
     lcd.setCursor(7, 1); // Display the result
     lcd.print(input_voltage, 1);
-    lcd.print("V");
+    lcd.print("V ");
 
     volt_last_update = millis(); // Set the update time
   }
