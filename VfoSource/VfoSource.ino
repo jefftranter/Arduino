@@ -10,8 +10,10 @@
   This version has additional changes by Hank Ellis K5HDE:
   V1.0 14 June 2016 Implementation of the basic voltmeter
   V1.1 23 June 2016 Fixed bug that blanks the voltmeter when the frequency step is changed via the encoder pushbutton
+  V2.0 16 July 2016 Added voltage low and high cautions and warnings
 
   This version has additional changes by Jeff Tranter VE3ICH:
+  - Finish implementing support for RIT.
   - Indicate transmit on Arduino LED.
   - Indicate transmit on LCD.
   - Modified startup screen.
@@ -27,6 +29,8 @@
 #define TXLED
 // Uncomment next line if you want the LCD display to indicate transmit.
 #define TXLCD
+// Uncomment next line if you want the RI offset feature.
+#define RIT
 
 #include <Rotary.h>   // From Brian Low: https://github.com/brianlow/Rotary
 #include <EEPROM.h>   // Shipped with IDE
@@ -71,7 +75,7 @@
 #define SPLASHDELAY    2000               // Hold splash screen for 2 seconds
 
 #define ROTARYSWITCHPIN   4               // Used by switch for rotary encoder
-#define RITPIN            8               // Used by push button switch to toggle RIT
+#define RITPIN            7               // Used by pushbutton switch to toggle RIT
 #define RXTXPIN          12               // When HIGH, the xcvr is in TX mode
 #define RITOFFSETSTART  700L              // Offset for RIT
 
@@ -110,7 +114,7 @@ int_fast32_t oldFrequency = 1;    // Variable to hold the updated frequency
 static const char *bandWarnings[] = { "Ext", "Tec", "Gen" }; // Altered in V1.0 of voltmeter implementation
 #else
 static const char *bandWarnings[] = { "Extra  ", "Tech   ", "General" };
-#endif
+#endif // VOLTMETER
 
 static int whichLicense;
 static const char *incrementStrings[] = {"10", "20", "100", ".5", "1", "2.5", "5", "10", "100" }; // These two align
@@ -142,14 +146,14 @@ void setup() {
   pinMode(RITPIN, INPUT_PULLUP);
 #ifdef TXLED
   pinMode(13, OUTPUT);                // Controls on-board LED
-#endif
+#endif // TXLED
   oldRitState = ritState = LOW;       // Receiver incremental tuning state HIGH, LOW
   ritOffset = RITOFFSETSTART;         // Default RIT offset
   ritDisplaySwitch = 0;
 
   lcd.init();
   lcd.backlight();
-  Splash();                           // Tell 'em were here...
+  Splash();                           // Tell 'em we're here...
 
   PCICR |= (1 << PCIE2);              // Interrupt service code
   PCMSK2 |= (1 << PCINT18) | (1 << PCINT19);
@@ -161,7 +165,7 @@ void setup() {
 
   pulseHigh(RESET);
   pulseHigh(W_CLK);
-  pulseHigh(FQ_UD);  // this pulse enables serial mode on the AD9850 - Datasheet page 12.`
+  pulseHigh(FQ_UD);  // This pulse enables serial mode on the AD9850 - Datasheet page 12.
 
   ProcessSteps();
   DoRangeCheck();
@@ -175,20 +179,30 @@ void loop() {
 
   int flag;
 
-  // Set Arduino on board LED to status of T/R pin to indicate transmit.
-#ifdef TXLED
-  digitalWrite(13, !digitalRead(RXTXPIN));
-#endif
-
-#ifdef TXLCD
-  // Indicate transmit on LCD with *
-  lcd.setCursor(0, 0);
+  // Handle actions for transmit
   if (!digitalRead(RXTXPIN)) {
+#ifdef RIT
+      sendFrequency(currentFrequency); // Transmit, set VFO for no RIT offset.
+#endif // RIT
+#ifdef TXLED
+      digitalWrite(13, HIGH); // Set Arduino on board LED to status of T/R pin to indicate transmit.
+#endif // TXLED
+#ifdef TXLCD
+      lcd.setCursor(0, 0);  // Indicate transmit on LCD with *.
       lcd.print("*");
+#endif // TXLCD
   } else {
+#ifdef RIT
+      sendFrequency(currentFrequency + ritOffset); // Receive, set VFO for RIT offset.
+#endif // RIT
+#ifdef TXLED
+      digitalWrite(13, LOW);
+#endif // TXLED
+#ifdef TXLCD
+      lcd.setCursor(0, 0);
       lcd.print(" ");
+#endif // TXLCD
   }
-#endif
 
   state = digitalRead(ROTARYSWITCHPIN);    // See if they pressed encoder switch
   ritState = digitalRead(RITPIN);          // Also check RIT button
@@ -229,7 +243,9 @@ void loop() {
   }
 
   if (ritState == HIGH) {      // Change RIT?
-    //DoRitDisplay();
+#ifdef RIT
+    DoRitDisplay();
+#endif // RIT
     ritDisplaySwitch = 1;
   }
   if (oldRitState != ritState) {
@@ -239,7 +255,7 @@ void loop() {
   }
 #ifdef VOLTMETER
   Voltmeter();
-#endif
+#endif // VOLTMETER
 }
 
 void DoRitDisplay()
@@ -462,6 +478,7 @@ int DoRangeCheck()
       (currentFrequency > VFOGENERALLOWGAP && currentFrequency < VFOUPPERFREQUENCYLIMIT) ) {
     whichLicense = GENERAL;
   }
+
   ShowMarker(bandWarnings[whichLicense]);
 
   return FREQINBAND;
@@ -471,7 +488,7 @@ int DoRangeCheck()
   This method is used to display the current license type
 
   Argument list:
-    char *c       // pointer to the type of license as held in bandWarnings[]
+    char *c       // Pointer to the type of license as held in bandWarnings[]
 
   Return value:
     void
@@ -528,32 +545,88 @@ void Splash()
 }
 
 /*****
-This method is used to read the value from the R7, R8, C7 voltage divider circuit going to pin 26/A7 of the Arduino, process the required calculations, then display the voltage on the LCD.
-14 June 2016 by Hank Ellis K5HDE.
+ * This method is used to read the value from the R7, R8, C7 voltage
+ * divider circuit going to pin 26/A7 of the Arduino, process the
+ * requiredcalcul ations, then display the voltage on the LCD.
+ * by Hank Ellis K5HDE.
+ * V1.0 14 June 2016 Implementation of the basic voltmeter
+ * V1.1 23 June 2016 Fixed bug that blanks the voltmeter when the frequency step is changed via the encoder pushbutton
+ * V2.0 16 July 2016 Added voltage low and high cautions and warnings
 *****/
-
 #ifdef VOLTMETER
 void Voltmeter()
 {
-  float input_voltage = 0.0; // The end result we want to display
-  float temp = 0.0;          // Temporary number used in calculations
-  float r7 = 20000.0;        // Value of R7
-  float r8 = 8000.0;         // Arbitrary value assigned to R8. Intent is to provide a 3.5 voltage divider.
-
+  static boolean state = false; // Sets the state of the display
+  static float input_voltage = 0.0; // The end result we want to display
   static unsigned long volt_last_update = millis();  // Record when the last voltage display was updated
-  static unsigned long DELTA_TIME_LOOP = 1000;       // Time between voltage display updates
 
-  if ((millis() - volt_last_update) > DELTA_TIME_LOOP) // If the time since last update has elapsed
+  #define TIME_LOOP 250 // Time between voltage display updates
+  #define VOLT_LOW_WARNING 11.3 // Voltage triggers for cautions and warnings
+  #define VOLT_LOW_CAUTION 11.9
+  #define VOLT_HIGH_CAUTION 13.8
+  #define VOLT_HIGH_WARNING 14.0
+
+  if ((millis() - volt_last_update) > TIME_LOOP) // If the time since last update has elapsed
   {
-    int analog_value = analogRead(A7);       // Read the value from the voltage divider on pin A7
-    temp = (analog_value * 5.0) / 1023.0;    // Convert it to a usable number
-    input_voltage = temp / (r8 / (r7 + r8)); // Formula of a voltage divider circuit
-
-    lcd.setCursor(7, 1); // Display the result
-    lcd.print(input_voltage, 1);
-    lcd.print("V ");
-
-    volt_last_update = millis(); // Set the update time
+    if (input_voltage <= VOLT_LOW_WARNING || input_voltage >= VOLT_HIGH_WARNING) // Is the voltage within the warning triggers?
+    {
+      if (state == false) // Blank the display
+      {
+        blank_volt_display();
+      }
+      else
+      {
+        input_voltage = volt_display(); // Turn it back on
+      }
+      state = !state; // Toggle the display state
+      volt_last_update = millis(); // and update the last voltage update time
+    }
+    if ((millis() - volt_last_update) > (TIME_LOOP * 3)) // Since we didn't have a voltage warning a longer refresh time is acceptable
+    {
+      if (input_voltage <= VOLT_LOW_CAUTION || input_voltage >= VOLT_HIGH_CAUTION) // is the voltage within the caution triggers?
+      {
+        if (state == false) // Blank the display
+        {
+          blank_volt_display();
+        }
+        else // or
+        {
+          input_voltage = volt_display(); // Turn it back on
+        }
+        state = !state; // Toggle the display state
+        volt_last_update = millis(); // and update the last voltage update time
+      }
+      else // If the voltage is within the normal range
+      {
+        input_voltage = volt_display(); // Display the voltage
+        volt_last_update = millis(); // And update the last voltage update time
+      }
+    }
   }
 }
-#endif
+
+float volt_display()
+{
+  float analog_value = 0.0; // Value from Arduino pin 26/A7
+  float temp = 0.0; // Temporary number used in calculations
+  float r7 = 20000.0; // Value of R7
+  float r8 = 8000.0; // Arbitrary value assigned to R8. Intent is to provide a 3.5 voltage divider.
+  float disp_voltage = 0.0;
+
+  analog_value = analogRead(A7); // Read the value from the voltage divider on pin A7
+  temp = (analog_value * 5.0) / 1023.0; // Convert it to a usable number
+  disp_voltage = temp / (r8 / (r7 + r8)); // Formula of a voltage divider circuit
+
+  lcd.setCursor(7, 1); // Display the result
+  lcd.print(disp_voltage, 1);
+  lcd.print("V ");
+
+  return disp_voltage;
+}
+
+void blank_volt_display()
+{
+  lcd.setCursor(7, 1); // Set the cursor and print spaces
+  lcd.print("      ");
+}
+#endif // VOLTMETER
