@@ -45,6 +45,7 @@
 #define MYTUNINGCONSTANT     34.35977500000000    // Replace with your calculated TUNING CONSTANT. See article
 
 #define SPACES      "       " // Altered in V1.1 of Voltmeter implementation
+#define SPACES16    "                " // A full line of spaces
 #define HERTZ       "Hz "
 #define KILOHERTZ   "kHz "
 #define MEGAHERTZ   "MHz "
@@ -169,7 +170,6 @@ void setup() {
 
   ProcessSteps();
   DoRangeCheck();
-  ShowMarker(bandWarnings[whichLicense]);
   sendFrequency(currentFrequency);
 }
 
@@ -205,7 +205,7 @@ void loop() {
   }
 
   state = digitalRead(ROTARYSWITCHPIN);    // See if they pressed encoder switch
-  ritState = digitalRead(RITPIN);          // Also check RIT button
+  ritState = !digitalRead(RITPIN);         // Also check RIT button
 
   if (state != oldState) {                 // Only if it's been changed...
     if (state == 1) {                      // Only adjust increment when HIGH
@@ -254,7 +254,9 @@ void loop() {
     ritDisplaySwitch = 0;
   }
 #ifdef VOLTMETER
+  if (ritState != HIGH) {      // No room on display when showing RIT
   Voltmeter();
+  }
 #endif // VOLTMETER
 }
 
@@ -264,12 +266,13 @@ void DoRitDisplay()
 
   if (oldRitOffset == ritOffset && ritDisplaySwitch == 1)
     return;
-  DisplayLCDLine(SPACES, 1, 0);
+
+  DisplayLCDLine(SPACES16, 1, 0);
   ltoa(ritOffset, tempOffset, 10);
 
   strcpy(temp, "Offset: ");
   strcat(temp, tempOffset);
-
+  strcat(temp, " Hz");
   DisplayLCDLine(temp, 1, 0);
 
   oldRitOffset = ritOffset;
@@ -289,7 +292,7 @@ ISR(PCINT2_vect) {
       if (ritState == LOW) {
         currentFrequency += currentFrequencyIncrement;
       } else {
-        ritOffset += RITOFFSETSTART;
+        ritOffset += currentFrequencyIncrement;
       }
       break;
 
@@ -297,7 +300,7 @@ ISR(PCINT2_vect) {
       if (ritState == LOW) {
         currentFrequency -= currentFrequencyIncrement;
       } else {
-        ritOffset -= RITOFFSETSTART;
+        ritOffset -= currentFrequencyIncrement;
       }
       break;
 
@@ -479,8 +482,9 @@ int DoRangeCheck()
     whichLicense = GENERAL;
   }
 
-  ShowMarker(bandWarnings[whichLicense]);
-
+  if (ritState != HIGH) {      // No room on display when showing RIT
+      ShowMarker(bandWarnings[whichLicense]);
+  }
   return FREQINBAND;
 }
 
@@ -523,7 +527,9 @@ void ProcessSteps()
   }
 
   DisplayLCDLine(temp, 1, 0);
-  ShowMarker(bandWarnings[whichLicense]);
+  if (ritState != HIGH) {      // No room on display when showing RIT
+      ShowMarker(bandWarnings[whichLicense]);
+  }
 }
 
 /*****
