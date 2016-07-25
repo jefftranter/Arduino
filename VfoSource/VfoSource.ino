@@ -86,6 +86,7 @@
 // ===================================== EEPROM Offsets and data ==============================================
 #define READEEPROMFREQ        0       // The EEPROM record address of the last written frequency
 #define READEEPROMINCRE       1       // The EEPROM record address of last frequency increment
+#define READEEPROMRIT         2       // The EEPROM record address of last RIT offset
 
 #define DELTAFREQOFFSET      25       // Must move frequency more than this to call it a frequency change
 #define DELTATIMEOFFSET   60000       // If not change in frequency within 1 minute, update the frequency
@@ -135,12 +136,15 @@ void setup() {
     currentFrequency = 7030000L;                                  // Default QRP freq if no EEPROM recorded yet
   markFrequency = currentFrequency;                               // Save EEPROM freq.
 
-
   incrementIndex = (int) readEEPROMRecord(READEEPROMINCRE);       // Saved increment as written to EEPROM
   if (incrementIndex < 0 || incrementIndex > 9)                   // If none stored in EEPROM yet...
     incrementIndex = 0;                                           // ...set to 10Hz
+
+  ritOffset = readEEPROMRecord(READEEPROMRIT);                    // Last RIT offset
+  if (ritOffset < -100000L || ritOffset > 100000L)                // New EEPROM usually initialized with 0xFF
+    ritOffset = RITOFFSETSTART;                                   // Default RIT offset if no EEPROM recorded yet
+
   currentFrequencyIncrement = incrementTable[incrementIndex];     // Store working freq variables
-  markFrequency = currentFrequency;
   eepromStartTime = millis();                                     // Need to keep track of EEPROM update time
 
   pinMode(ROTARYSWITCHPIN, INPUT_PULLUP);
@@ -149,7 +153,6 @@ void setup() {
   pinMode(13, OUTPUT);                // Controls on-board LED
 #endif // TXLED
   oldRitState = ritState = LOW;       // Receiver incremental tuning state HIGH, LOW
-  ritOffset = RITOFFSETSTART;         // Default RIT offset
   ritDisplaySwitch = 0;
 
   lcd.init();
@@ -176,7 +179,6 @@ void setup() {
 void loop() {
   static int state = 1;      // 1 because of pull-ups on encoder switch
   static int oldState = 1;
-
   int flag;
 
   // Handle actions for transmit
@@ -238,6 +240,7 @@ void loop() {
   if (eepromCurrentTime - eepromStartTime > DELTATIMEOFFSET && markFrequency != currentFrequency) {
     writeEEPROMRecord(currentFrequency, READEEPROMFREQ);                  // Update freq
     writeEEPROMRecord((unsigned long) incrementIndex, READEEPROMINCRE);   // Update increment
+    writeEEPROMRecord(ritOffset, READEEPROMRIT);                          // Update RIT offset
     eepromStartTime = millis();
     markFrequency = currentFrequency;                                     // Update EEPROM freq.
   }
@@ -292,7 +295,7 @@ ISR(PCINT2_vect) {
       if (ritState == LOW) {
         currentFrequency += currentFrequencyIncrement;
       } else {
-        ritOffset += currentFrequencyIncrement;
+        ritOffset += currentFrequencyIncrement / 10; // Use a slower tuning rate for RIT
       }
       break;
 
@@ -300,7 +303,7 @@ ISR(PCINT2_vect) {
       if (ritState == LOW) {
         currentFrequency -= currentFrequencyIncrement;
       } else {
-        ritOffset -= currentFrequencyIncrement;
+        ritOffset -= currentFrequencyIncrement / 10; // Use a slower tuning rate for RIT
       }
       break;
 
@@ -368,8 +371,6 @@ void DisplayLCDLine(const char *message, int row, int col)
   Return value:
     unsigned long            the value of the record,
 
-  CAUTION:  Record 0 is the current frequency while tuning, etc. Record 1 is the number of stored
-            frequencies the user has set. Therefore, the stored frequencies list starts with record 23.
 *****/
 unsigned long readEEPROMRecord(int record)
 {
@@ -390,11 +391,9 @@ unsigned long readEEPROMRecord(int record)
 }
 
 /*****
-  This method is used to test and perhaps write the latest frequency to EEPROM. This routine is called
-  every DELTATIMEOFFSET (default = 10 seconds). The method tests to see if the current frequency is the
-  same as the last frequency (markFrequency). If they are the same, +/- DELTAFREQOFFSET (drift?), no
-  write to EEPROM takes place. If the change was larger than DELTAFREQOFFSET, the new frequency is
-  written to EEPROM. This is done because EEPROM can only be written/erased 100K times before it gets
+  This method is used to write the latest data to EEPROM. This routine
+  is called every DELTATIMEOFFSET (default = 60 seconds). This is done
+  because EEPROM can only be written/erased 100K times before it gets
   flaky.
 
   Argument list:
@@ -412,9 +411,6 @@ void writeEEPROMRecord(unsigned long freq, int record)
     unsigned long val;
   } myUnion;
 
-  if (abs(markFrequency - freq) < DELTAFREQOFFSET) {  // Is the new frequency more or less the same as the one last written?
-    return;                                           // the same as the one last written? If so, go home.
-  }
   myUnion.val = freq;
   offset = record * sizeof(unsigned long);
 
@@ -422,11 +418,10 @@ void writeEEPROMRecord(unsigned long freq, int record)
   EEPROM.write(offset + 1, myUnion.array[1]);
   EEPROM.write(offset + 2, myUnion.array[2]);
   EEPROM.write(offset + 3, myUnion.array[3]);
-  markFrequency = freq;                               // Save the value just written
 }
 
 /*****
-  This method is used to format a frrequency on the lcd display. The currentFrequqncy variable holds the display
+  This method is used to format a frrequency on the lcd display. The currentFrequency variable holds the display
   frequency. This is kinda clunky...
 
   Argument list:
@@ -567,8 +562,8 @@ void Voltmeter()
   static unsigned long volt_last_update = millis();  // Record when the last voltage display was updated
 
   #define TIME_LOOP 250 // Time between voltage display updates
-  #define VOLT_LOW_WARNING 11.3 // Voltage triggers for cautions and warnings
-  #define VOLT_LOW_CAUTION 11.9
+  #define VOLT_LOW_WARNING 10.0 // Voltage triggers for cautions and warnings
+  #define VOLT_LOW_CAUTION 11.0
   #define VOLT_HIGH_CAUTION 13.8
   #define VOLT_HIGH_WARNING 14.0
 
