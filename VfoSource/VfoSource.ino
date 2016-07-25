@@ -19,6 +19,7 @@
   - Modified startup screen.
   - Make options configurable at compile time.
   - Small code formatting changes and cleanup (e.g. fix compile warnings)
+  - Idle timeout for LCD backlight.
 
   Tested with Arduino IDE V-1.6.9
 */
@@ -31,6 +32,8 @@
 #define TXLCD
 // Uncomment next line if you want the RI offset feature.
 #define RIT
+// Uncomment next line if you want the backlight screen blanking feature.
+#define BLANKING
 
 #include <Rotary.h>   // From Brian Low: https://github.com/brianlow/Rotary
 #include <EEPROM.h>   // Shipped with IDE
@@ -91,9 +94,13 @@
 #define DELTAFREQOFFSET      25       // Must move frequency more than this to call it a frequency change
 #define DELTATIMEOFFSET   60000       // If not change in frequency within 1 minute, update the frequency
 
+#ifdef BLANKING
+#define BACKLIGHTTIMEOUT 180000       // If no change in frequency within this time (in milliseconds), dim the backlight
+#endif
+
 unsigned long markFrequency;          // The frequency just written to EEPROM
 long eepromStartTime;                 // Set when powered up and while tuning
-long eepromCurrentTime;               // The current time reading
+long idleTime;                        // Time since system was last active (i.e. button pushed or knob turned)
 
 // ============================ ISR variables: ======================================
 volatile int_fast32_t currentFrequency;     // Starting frequency of VFO
@@ -158,6 +165,8 @@ void setup() {
   lcd.init();
   lcd.backlight();
   Splash();                           // Tell 'em we're here...
+
+  idleTime = millis();                // Initialize idle time.
 
   PCICR |= (1 << PCIE2);              // Interrupt service code
   PCMSK2 |= (1 << PCINT18) | (1 << PCINT19);
@@ -225,7 +234,9 @@ void loop() {
 
   if (currentFrequency != oldFrequency) { // Are we still looking at the same frequency?
     NewShowFreq(0, 0);                    // Nope, so update display.
-
+#ifdef BLANKING
+    idleTime = millis();                  // Reset idle time
+#endif
     flag = DoRangeCheck();
     if (flag == FREQOUTOFBAND) {          // Tell user if out of band; should not happen
       lcd.setCursor(0, 0);
@@ -235,15 +246,27 @@ void loop() {
     oldFrequency = currentFrequency;
   }
 
-  eepromCurrentTime = millis();
   // Only update EEPROM if necessary...both time and currently stored freq.
-  if (eepromCurrentTime - eepromStartTime > DELTATIMEOFFSET && markFrequency != currentFrequency) {
+  if (millis() - eepromStartTime > DELTATIMEOFFSET && markFrequency != currentFrequency) {
     writeEEPROMRecord(currentFrequency, READEEPROMFREQ);                  // Update freq
     writeEEPROMRecord((unsigned long) incrementIndex, READEEPROMINCRE);   // Update increment
     writeEEPROMRecord(ritOffset, READEEPROMRIT);                          // Update RIT offset
     eepromStartTime = millis();
     markFrequency = currentFrequency;                                     // Update EEPROM freq.
   }
+
+#ifdef BLANKING
+  if (ritState != oldRitState) {
+      idleTime = millis(); // Reset idle time
+  }
+
+ // See if it is time to dim the backlight because system is idle.
+  if (millis() - idleTime > BACKLIGHTTIMEOUT) {
+      lcd.noBacklight(); // Turn off backlight
+  } else {
+      lcd.backlight(); // Turn on backlight
+  }
+#endif
 
   if (ritState == HIGH) {      // Change RIT?
 #ifdef RIT
