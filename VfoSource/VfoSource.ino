@@ -58,7 +58,7 @@
 #define EXTRA       0
 
 #define ELEMENTCOUNT(x) (sizeof(x) / sizeof(x[0]))  // A macro that calculates the number
-                                                    // of elements in an array.
+// of elements in an array.
 #define pulseHigh(pin) {digitalWrite(pin, HIGH); digitalWrite(pin, LOW); } // Write macro
 
 // Set up some VFO band edges
@@ -193,25 +193,25 @@ void loop() {
   // Handle actions for transmit
   if (!digitalRead(RXTXPIN)) {
 #ifdef RIT
-      sendFrequency(currentFrequency); // Transmit, set VFO for no RIT offset.
+    sendFrequency(currentFrequency); // Transmit, set VFO for no RIT offset.
 #endif // RIT
 #ifdef TXLED
-      digitalWrite(13, HIGH); // Set Arduino on board LED to status of T/R pin to indicate transmit.
+    digitalWrite(13, HIGH); // Set Arduino on board LED to status of T/R pin to indicate transmit.
 #endif // TXLED
 #ifdef TXLCD
-      lcd.setCursor(0, 0);  // Indicate transmit on LCD with *.
-      lcd.print("*");
+    lcd.setCursor(0, 0);  // Indicate transmit on LCD with *.
+    lcd.print("*");
 #endif // TXLCD
   } else {
 #ifdef RIT
-      sendFrequency(currentFrequency + ritOffset); // Receive, set VFO for RIT offset.
+    sendFrequency(currentFrequency + ritOffset); // Receive, set VFO for RIT offset.
 #endif // RIT
 #ifdef TXLED
-      digitalWrite(13, LOW);
+    digitalWrite(13, LOW);
 #endif // TXLED
 #ifdef TXLCD
-      lcd.setCursor(0, 0);
-      lcd.print(" ");
+    lcd.setCursor(0, 0);
+    lcd.print(" ");
 #endif // TXLCD
   }
 
@@ -257,14 +257,14 @@ void loop() {
 
 #ifdef BLANKING
   if (ritState != oldRitState) {
-      idleTime = millis(); // Reset idle time
+    idleTime = millis(); // Reset idle time
   }
 
- // See if it is time to dim the backlight because system is idle.
+  // See if it is time to dim the backlight because system is idle.
   if (millis() - idleTime > BACKLIGHTTIMEOUT) {
-      lcd.noBacklight(); // Turn off backlight
+    lcd.noBacklight(); // Turn off backlight
   } else {
-      lcd.backlight(); // Turn on backlight
+    lcd.backlight(); // Turn on backlight
   }
 #endif
 
@@ -281,7 +281,7 @@ void loop() {
   }
 #ifdef VOLTMETER
   if (ritState != HIGH) {      // No room on display when showing RIT
-  Voltmeter();
+    Voltmeter();
   }
 #endif // VOLTMETER
 }
@@ -344,11 +344,11 @@ ISR(PCINT2_vect) {
 
 void sendFrequency(int32_t frequency) {
   /*
-  Formula: int32_t adjustedFreq = frequency * 4294967295/125000000;
+    Formula: int32_t adjustedFreq = frequency * 4294967295/125000000;
 
-  Note the 125 MHz clock on 9850.  You can make 'slight' tuning
-  variations here by adjusting the clock frequency. The constants
-  factor to 34.359
+    Note the 125 MHz clock on 9850.  You can make 'slight' tuning
+    variations here by adjusting the clock frequency. The constants
+    factor to 34.359
   */
   int32_t freq = (int32_t) (((float) frequency * MYTUNINGCONSTANT));  // Redefine your constant if needed
 
@@ -449,7 +449,7 @@ void writeEEPROMRecord(unsigned long freq, int record)
 *****/
 void NewShowFreq(int row, int col) {
   char part[10];
-  dtostrf( (float) currentFrequency, 7,0, temp);
+  dtostrf((float)currentFrequency, 7, 0, temp);
 
   strcpy(part, &temp[1]);
   strcpy(temp, "7.");
@@ -495,7 +495,7 @@ int DoRangeCheck()
   }
 
   if (ritState != HIGH) {      // No room on display when showing RIT
-      ShowMarker(bandWarnings[whichLicense]);
+    ShowMarker(bandWarnings[whichLicense]);
   }
   return FREQINBAND;
 }
@@ -540,7 +540,7 @@ void ProcessSteps()
 
   DisplayLCDLine(temp, 1, 0);
   if (ritState != HIGH) {      // No room on display when showing RIT
-      ShowMarker(bandWarnings[whichLicense]);
+    ShowMarker(bandWarnings[whichLicense]);
   }
 }
 
@@ -563,13 +563,13 @@ void Splash()
 }
 
 /*****
- * This method is used to read the value from the R7, R8, C7 voltage
- * divider circuit going to pin 26/A7 of the Arduino, process the
- * requiredcalcul ations, then display the voltage on the LCD.
- * by Hank Ellis K5HDE.
- * V1.0 14 June 2016 Implementation of the basic voltmeter
- * V1.1 23 June 2016 Fixed bug that blanks the voltmeter when the frequency step is changed via the encoder pushbutton
- * V2.0 16 July 2016 Added voltage low and high cautions and warnings
+   This method is used to read the value from the R7, R8, C7 voltage
+   divider circuit going to pin 26/A7 of the Arduino, process the
+   requiredcalcul ations, then display the voltage on the LCD.
+   by Hank Ellis K5HDE.
+   V1.0 14 June 2016 Implementation of the basic voltmeter
+   V1.1 23 June 2016 Fixed bug that blanks the voltmeter when the frequency step is changed via the encoder pushbutton
+   V2.0 16 July 2016 Added voltage low and high cautions and warnings
 *****/
 #ifdef VOLTMETER
 void Voltmeter()
@@ -578,11 +578,11 @@ void Voltmeter()
   static float input_voltage = 0.0; // The end result we want to display
   static unsigned long volt_last_update = millis();  // Record when the last voltage display was updated
 
-  #define TIME_LOOP 250          // Time between voltage display updates
-  #define VOLT_LOW_WARNING 10.0  // Voltage triggers for cautions and warnings, adjust as desired.
-  #define VOLT_LOW_CAUTION 11.0
-  #define VOLT_HIGH_CAUTION 13.8
-  #define VOLT_HIGH_WARNING 14.0
+#define TIME_LOOP 250          // Time between voltage display updates
+#define VOLT_LOW_WARNING 10.0  // Voltage triggers for cautions and warnings, adjust as desired.
+#define VOLT_LOW_CAUTION 11.0
+#define VOLT_HIGH_CAUTION 13.8
+#define VOLT_HIGH_WARNING 14.0
 
   if ((millis() - volt_last_update) > TIME_LOOP) // If the time since last update has elapsed
   {
