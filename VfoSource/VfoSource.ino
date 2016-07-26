@@ -30,7 +30,7 @@
 #define TXLED
 // Uncomment next line if you want the LCD display to indicate transmit.
 #define TXLCD
-// Uncomment next line if you want the RI offset feature.
+// Uncomment next line if you want the RIT offset feature.
 #define RIT
 // Uncomment next line if you want the backlight screen blanking feature.
 #define BLANKING
@@ -45,9 +45,9 @@
 // in the Arduino library folder
 #include <LiquidCrystal_I2C.h>
 
-#define MYTUNINGCONSTANT     34.35977500000000    // Replace with your calculated TUNING CONSTANT. See article
+#define MYTUNINGCONSTANT     34.35977500000000    // Replace with your calculated TUNING CONSTANT. See article.
 
-#define SPACES      "       " // Altered in V1.1 of Voltmeter implementation
+#define SPACES      "       "          // Altered in V1.1 of Voltmeter implementation
 #define SPACES16    "                " // A full line of spaces
 #define HERTZ       "Hz "
 #define KILOHERTZ   "kHz "
@@ -95,7 +95,7 @@
 #define DELTATIMEOFFSET   60000       // If not change in frequency within 1 minute, update the frequency
 
 #ifdef BLANKING
-#define BACKLIGHTTIMEOUT 180000       // If no change in frequency within this time (in milliseconds), dim the backlight
+#define BACKLIGHTTIMEOUT 180000       // If no knob/button activity within this time (in milliseconds), dim the backlight
 #endif
 
 unsigned long markFrequency;          // The frequency just written to EEPROM
@@ -246,7 +246,7 @@ void loop() {
     oldFrequency = currentFrequency;
   }
 
-  // Only update EEPROM if necessary...both time and currently stored freq.
+  // Only update EEPROM if necessary... both time and currently stored freq.
   if (millis() - eepromStartTime > DELTATIMEOFFSET && markFrequency != currentFrequency) {
     writeEEPROMRecord(currentFrequency, READEEPROMFREQ);                  // Update freq
     writeEEPROMRecord((unsigned long) incrementIndex, READEEPROMINCRE);   // Update increment
@@ -369,11 +369,8 @@ void tfr_byte(byte data)
 }
 
 /*****
-  This method is used to format a frequency on the lcd display. The currentFrequency variable holds the display
+  This method is used to format a frequency on the LCD display. The currentFrequency variable holds the display
   frequency.
-
-  Argument list:
-    void
 
   Return value:
     void
@@ -444,11 +441,8 @@ void writeEEPROMRecord(unsigned long freq, int record)
 }
 
 /*****
-  This method is used to format a frrequency on the lcd display. The currentFrequency variable holds the display
+  This method is used to format a frrequency on the LCD display. The currentFrequency variable holds the display
   frequency. This is kinda clunky...
-
-  Argument list:
-    void
 
   Return value:
     void
@@ -584,8 +578,8 @@ void Voltmeter()
   static float input_voltage = 0.0; // The end result we want to display
   static unsigned long volt_last_update = millis();  // Record when the last voltage display was updated
 
-  #define TIME_LOOP 250 // Time between voltage display updates
-  #define VOLT_LOW_WARNING 10.0 // Voltage triggers for cautions and warnings
+  #define TIME_LOOP 250          // Time between voltage display updates
+  #define VOLT_LOW_WARNING 10.0  // Voltage triggers for cautions and warnings, adjust as desired.
   #define VOLT_LOW_CAUTION 11.0
   #define VOLT_HIGH_CAUTION 13.8
   #define VOLT_HIGH_WARNING 14.0
