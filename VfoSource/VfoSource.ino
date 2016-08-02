@@ -34,6 +34,11 @@
 #define RIT
 // Uncomment next line if you want the backlight screen blanking feature.
 #define BLANKING
+// Uncomment next line if you want the receiver to support generate
+// coverage and not just the 40 meter ham band (you will need to
+// disable the low pass filter if you the want to receive outside this
+// range). This can also be useful for testing the DDS oscillator.
+//#define GENERALCOVERAGE
 
 #include <Rotary.h>   // From Brian Low: https://github.com/brianlow/Rotary
 #include <EEPROM.h>   // Shipped with IDE
@@ -62,8 +67,13 @@
 #define pulseHigh(pin) {digitalWrite(pin, HIGH); digitalWrite(pin, LOW); } // Write macro
 
 // Set up some VFO band edges
+#ifdef GENERALCOVERAGE
+#define VFOUPPERFREQUENCYLIMIT  50000000L           // Upper band edge
+#define VFOLOWERFREQUENCYLIMIT  1L                  // Lower band edge
+#else
 #define VFOUPPERFREQUENCYLIMIT  7300000L            // Upper band edge
 #define VFOLOWERFREQUENCYLIMIT  7000000L            // Lower band edge
+#endif // GENERALCOVERAGE
 #define VFOLOWALLBUTEXTRA       7025000L            // Frequency of Extra licensees only
 #define VFOHIGHTECH             7125000L            // Hi Tech cutoff
 #define VFOLOWTECH              7100000L            // Low Tech cutoff
@@ -126,8 +136,13 @@ static const char *bandWarnings[] = { "Extra  ", "Tech   ", "General" };
 #endif // VOLTMETER
 
 static int whichLicense;
+#ifdef GENERALCOVERAGE
+static const char *incrementStrings[] = {"10", "20", "100", ".5", "1", "2.5", "5", "10", "100", "1" }; // These two align
+static long incrementTable[]          = { 10,   20,   100,  500, 1000, 2500, 5000, 10000, 100000, 1000000 };
+#else
 static const char *incrementStrings[] = {"10", "20", "100", ".5", "1", "2.5", "5", "10", "100" }; // These two align
 static long incrementTable[]          = { 10,   20,   100,  500, 1000, 2500, 5000, 10000, 100000 };
+#endif // GENERALCOVERAGE
 static long memory[]                  = { VFOLOWERFREQUENCYLIMIT, VFOUPPERFREQUENCYLIMIT };
 
 Rotary r = Rotary(2, 3);       // Create encoder object and set the pins the rotary encoder uses.  Must be interrupt pins.
@@ -144,7 +159,7 @@ void setup() {
   markFrequency = currentFrequency;                               // Save EEPROM freq.
 
   incrementIndex = (int) readEEPROMRecord(READEEPROMINCRE);       // Saved increment as written to EEPROM
-  if (incrementIndex < 0 || incrementIndex > 9)                   // If none stored in EEPROM yet...
+  if (incrementIndex < 0 || incrementIndex > 10)                  // If none stored in EEPROM yet...
     incrementIndex = 0;                                           // ...set to 10Hz
 
   ritOffset = readEEPROMRecord(READEEPROMRIT);                    // Last RIT offset
@@ -441,28 +456,29 @@ void writeEEPROMRecord(unsigned long freq, int record)
 }
 
 /*****
-  This method is used to format a frrequency on the LCD display. The currentFrequency variable holds the display
+  This method is used to format a frequency on the LCD display. The currentFrequency variable holds the display
   frequency. This is kinda clunky...
 
   Return value:
     void
 *****/
 void NewShowFreq(int row, int col) {
-  char part[10];
-  dtostrf((float)currentFrequency, 7, 0, temp);
-
-  strcpy(part, &temp[1]);
-  strcpy(temp, "7.");
-  strcat(temp, part);
-  strcpy(part, &temp[5]);
-  temp[5] = '.';
-  strcpy(&temp[6], part);
-  strcat(temp, " ");
-  strcat(temp, MEGAHERTZ);
+  char line[17];
+  dtostrf((float)currentFrequency, 8, 0, temp);
+  strncpy(line, temp, 2);
+  line[2] = '.';
+  line[3] = 0;
+  strncat(line, &temp[2], 3);
+  line[6] = '.';
+  line[7] = 0;
+  strncat(line, &temp[5], 3);
+  line[10] = ' ';
+  line[11] = 0;
+  strcat(line, MEGAHERTZ);
   lcd.setCursor(col, row);
   lcd.print(SPACES);
   lcd.setCursor(col + 2, row);
-  lcd.print(temp);
+  lcd.print(line);
 }
 
 /*****
@@ -534,8 +550,10 @@ void ProcessSteps()
 
   if (incrementIndex < 3) {
     strcat(temp, HERTZ);
-  } else {
+  } else if (incrementIndex < 9) {
     strcat(temp, KILOHERTZ);
+  } else {
+    strcat(temp, MEGAHERTZ);
   }
 
   DisplayLCDLine(temp, 1, 0);
