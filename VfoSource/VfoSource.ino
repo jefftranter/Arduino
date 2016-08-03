@@ -457,7 +457,7 @@ void writeEEPROMRecord(unsigned long freq, int record)
 
 /*****
   This method is used to format a frequency on the LCD display. The currentFrequency variable holds the display
-  frequency. This is kinda clunky...
+  frequency.
 
   Return value:
     void
