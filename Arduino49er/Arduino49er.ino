@@ -89,9 +89,11 @@
 #define SPLASHDELAY    2000               // Hold splash screen for 2 seconds
 
 #define ROTARYSWITCHPIN   4               // Used by switch for rotary encoder
+#ifdef RIT
 #define RITPIN            7               // Used by pushbutton switch to toggle RIT
-#define RXTXPIN          12               // When HIGH, the xcvr is in TX mode
 #define RITOFFSETSTART  700L              // Offset for RIT
+#endif // RIT
+#define RXTXPIN          12               // When HIGH, the xcvr is in TX mode
 
 #define FREQINBAND        0               // Used with range checking
 #define FREQOUTOFBAND     1
@@ -99,23 +101,26 @@
 // ===================================== EEPROM Offsets and data ==============================================
 #define READEEPROMFREQ        0       // The EEPROM record address of the last written frequency
 #define READEEPROMINCRE       1       // The EEPROM record address of last frequency increment
+#ifdef RIT
 #define READEEPROMRIT         2       // The EEPROM record address of last RIT offset
-
+#endif // RIT
 #define DELTAFREQOFFSET      25       // Must move frequency more than this to call it a frequency change
 #define DELTATIMEOFFSET   60000       // If not change in frequency within 1 minute, update the frequency
 
 #ifdef BLANKING
 #define BACKLIGHTTIMEOUT 180000       // If no knob/button activity within this time (in milliseconds), dim the backlight
-#endif
+#endif // BLANKING
 
 #ifdef RIT
 #define BREAKINDELAY 1000             // Time (in ms) to wait before switching DDS back to receive frequency to minimize chirp.
-#endif
+#endif // RIT
 
 unsigned long markFrequency;          // The frequency just written to EEPROM
 unsigned long eepromStartTime;        // Set when powered up and while tuning
 unsigned long idleTime;               // Time since system was last active (i.e. button pushed or knob turned)
+#ifdef RIT
 unsigned long breakinTime;            // Time since last switched from receive to transmit.
+#endif // RIT
 
 // ============================ ISR variables: ======================================
 volatile int_fast32_t currentFrequency;     // Starting frequency of VFO
@@ -167,15 +172,19 @@ void setup() {
   if (incrementIndex < 0 || incrementIndex > 10)                  // If none stored in EEPROM yet...
     incrementIndex = 0;                                           // ...set to 10Hz
 
+#ifdef RIT
   ritOffset = readEEPROMRecord(READEEPROMRIT);                    // Last RIT offset
   if (ritOffset < -100000L || ritOffset > 100000L)                // New EEPROM usually initialized with 0xFF
     ritOffset = RITOFFSETSTART;                                   // Default RIT offset if no EEPROM recorded yet
+#endif // RIT
 
   currentFrequencyIncrement = incrementTable[incrementIndex];     // Store working freq variables
   eepromStartTime = millis();                                     // Need to keep track of EEPROM update time
 
   pinMode(ROTARYSWITCHPIN, INPUT_PULLUP);
+#ifdef RIT
   pinMode(RITPIN, INPUT_PULLUP);
+#endif // RIT
 #ifdef TXLED
   pinMode(13, OUTPUT);                // Controls on-board LED
 #endif // TXLED
@@ -232,6 +241,7 @@ void loop() {
       sendFrequency(currentFrequency + ritOffset); // Receive, set VFO for RIT offset.
     }
 #endif // RIT
+
 #ifdef TXLED
     digitalWrite(13, LOW);
 #endif // TXLED
@@ -242,8 +252,9 @@ void loop() {
   }
 
   state = digitalRead(ROTARYSWITCHPIN);    // See if they pressed encoder switch
+#ifdef RIT
   ritState = !digitalRead(RITPIN);         // Also check RIT button
-
+#endif // RIT
   if (state != oldState) {                 // Only if it's been changed...
     if (state == 1) {                      // Only adjust increment when HIGH
       if (incrementIndex < ELEMENTCOUNT(incrementTable) - 1) {    // Adjust the increment size
@@ -262,7 +273,7 @@ void loop() {
     NewShowFreq(0, 0);                    // Nope, so update display.
 #ifdef BLANKING
     idleTime = millis();                  // Reset idle time
-#endif
+#endif // BLANKING
     flag = DoRangeCheck();
     if (flag == FREQOUTOFBAND) {          // Tell user if out of band; should not happen
       lcd.setCursor(0, 0);
@@ -276,15 +287,19 @@ void loop() {
   if (millis() - eepromStartTime > DELTATIMEOFFSET && markFrequency != currentFrequency) {
     writeEEPROMRecord(currentFrequency, READEEPROMFREQ);                  // Update freq
     writeEEPROMRecord((unsigned long) incrementIndex, READEEPROMINCRE);   // Update increment
+#ifdef RIT
     writeEEPROMRecord(ritOffset, READEEPROMRIT);                          // Update RIT offset
+#endif // RIT
     eepromStartTime = millis();
     markFrequency = currentFrequency;                                     // Update EEPROM freq.
   }
 
 #ifdef BLANKING
+#ifdef RIT
   if (ritState != oldRitState) {
     idleTime = millis(); // Reset idle time
   }
+#endif // RIT
 
   // See if it is time to dim the backlight because system is idle.
   if (millis() - idleTime > BACKLIGHTTIMEOUT) {
@@ -292,12 +307,11 @@ void loop() {
   } else {
     lcd.backlight(); // Turn on backlight
   }
-#endif
+#endif // BLANKING
 
-  if (ritState == HIGH) {      // Change RIT?
 #ifdef RIT
+  if (ritState == HIGH) {      // Change RIT?
     DoRitDisplay();
-#endif // RIT
     ritDisplaySwitch = 1;
   }
   if (oldRitState != ritState) {
@@ -305,13 +319,20 @@ void loop() {
     oldRitState = ritState;
     ritDisplaySwitch = 0;
   }
+#endif // RIT
+
 #ifdef VOLTMETER
+#ifdef RIT
   if (ritState != HIGH) {      // No room on display when showing RIT
     Voltmeter();
   }
+#else
+  Voltmeter();
+#endif // RIT
 #endif // VOLTMETER
 }
 
+#ifdef RIT
 void DoRitDisplay()
 {
   char tempOffset[8];
@@ -330,7 +351,7 @@ void DoRitDisplay()
   oldRitOffset = ritOffset;
   ritDisplaySwitch = 1;
 }
-
+#endif // RIT
 
 // Original interrupt service routine, as modified by Jack
 ISR(PCINT2_vect) {
@@ -341,19 +362,27 @@ ISR(PCINT2_vect) {
       return;
 
     case DIR_CW:                                     // Turning Clockwise, going to higher frequencies
+#ifdef RIT
       if (ritState == LOW) {
         currentFrequency += currentFrequencyIncrement;
       } else {
         ritOffset += currentFrequencyIncrement / 10; // Use a slower tuning rate for RIT
       }
+#else
+      currentFrequency += currentFrequencyIncrement;
+#endif // RIT
       break;
 
     case DIR_CCW:                                    // Turning Counter-Clockwise, going to lower frequencies
+#ifdef RIT
       if (ritState == LOW) {
         currentFrequency -= currentFrequencyIncrement;
       } else {
         ritOffset -= currentFrequencyIncrement / 10; // Use a slower tuning rate for RIT
       }
+#else
+      currentFrequency -= currentFrequencyIncrement;
+#endif // RIT
       break;
 
     default:                                          // Should never be here
@@ -530,9 +559,13 @@ int DoRangeCheck()
     whichLicense = GENERAL;
   }
 
+#ifdef RIT
   if (ritState != HIGH) {      // No room on display when showing RIT
     ShowMarker(bandWarnings[whichLicense]);
   }
+#else
+  ShowMarker(bandWarnings[whichLicense]);
+#endif // RIT
   return FREQINBAND;
 }
 
@@ -577,9 +610,13 @@ void ProcessSteps()
   }
 
   DisplayLCDLine(temp, 1, 0);
+#ifdef RIT
   if (ritState != HIGH) {      // No room on display when showing RIT
     ShowMarker(bandWarnings[whichLicense]);
   }
+#else
+  ShowMarker(bandWarnings[whichLicense]);
+#endif // RIT
 }
 
 /*****
