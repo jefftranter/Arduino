@@ -21,7 +21,7 @@
   - Small code formatting changes and cleanup (e.g. fix compile warnings)
   - Idle timeout for LCD backlight.
 
-  Tested with Arduino IDE V-1.6.9
+  Tested with Arduino IDE V-1.6.10
 */
 
 // Uncomment next line if you want the Voltmeter display option enabled.
@@ -365,6 +365,15 @@ void sendFrequency(int32_t frequency) {
     variations here by adjusting the clock frequency. The constants
     factor to 34.359
   */
+
+  static int32_t lastFrequency = 0;
+
+  if (frequency == lastFrequency) {
+    return;
+  }
+
+  lastFrequency = frequency;
+
   int32_t freq = (int32_t) (((float) frequency * MYTUNINGCONSTANT));  // Redefine your constant if needed
 
   for (int b = 0; b < 4; b++, freq >>= 8) {
