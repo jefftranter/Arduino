@@ -635,6 +635,38 @@ void Splash()
   lcd.setCursor(0, 1);
   lcd.print(__DATE__);
   delay(SPLASHDELAY);
+  lcd.setCursor(0, 0);
+  lcd.print("Options:        ");
+#ifdef VOLTMETER
+  lcd.setCursor(0, 1);
+  lcd.print("VOLTMETER       ");
+  delay(SPLASHDELAY / 2);
+#endif // VOLTMETER
+#ifdef TXLED
+  lcd.setCursor(0, 1);
+  lcd.print("TXLED           ");
+  delay(SPLASHDELAY / 2);
+#endif // TXLED
+#ifdef TXLCD
+  lcd.setCursor(0, 1);
+  lcd.print("TXLCD           ");
+  delay(SPLASHDELAY / 2);
+#endif // TXLCD
+#ifdef RIT
+  lcd.setCursor(0, 1);
+  lcd.print("RIT             ");
+  delay(SPLASHDELAY / 2);
+#endif // RIT
+#ifdef BLANKING
+  lcd.setCursor(0, 1);
+  lcd.print("BLANKING        ");
+  delay(SPLASHDELAY / 2);
+#endif // BLANKING
+#ifdef GENERALCOVERAGE
+  lcd.setCursor(0, 1);
+  lcd.print("GENERALCOVERAGE ");
+  delay(SPLASHDELAY / 2);
+#endif // GENERALCOVERAGE
 }
 
 /*****
