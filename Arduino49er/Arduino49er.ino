@@ -108,9 +108,14 @@
 #define BACKLIGHTTIMEOUT 180000       // If no knob/button activity within this time (in milliseconds), dim the backlight
 #endif
 
+#ifdef RIT
+#define BREAKINDELAY 1000             // Time (in ms) to wait before switching DDS back to receive frequency to minimize chirp.
+#endif
+
 unsigned long markFrequency;          // The frequency just written to EEPROM
-long eepromStartTime;                 // Set when powered up and while tuning
-long idleTime;                        // Time since system was last active (i.e. button pushed or knob turned)
+unsigned long eepromStartTime;        // Set when powered up and while tuning
+unsigned long idleTime;               // Time since system was last active (i.e. button pushed or knob turned)
+unsigned long breakinTime;            // Time since last switched from receive to transmit.
 
 // ============================ ISR variables: ======================================
 volatile int_fast32_t currentFrequency;     // Starting frequency of VFO
@@ -209,6 +214,7 @@ void loop() {
   if (!digitalRead(RXTXPIN)) {
 #ifdef RIT
     sendFrequency(currentFrequency); // Transmit, set VFO for no RIT offset.
+    breakinTime = millis();
 #endif // RIT
 #ifdef TXLED
     digitalWrite(13, HIGH); // Set Arduino on board LED to status of T/R pin to indicate transmit.
@@ -219,7 +225,12 @@ void loop() {
 #endif // TXLCD
   } else {
 #ifdef RIT
-    sendFrequency(currentFrequency + ritOffset); // Receive, set VFO for RIT offset.
+    // When DDS frequency changes for RIT offset we will get some chirp.
+    // Wait break-in time before switching DDS back to receive
+    // frequency to minimize the chirp.
+    if ((millis() - breakinTime) > BREAKINDELAY) {
+      sendFrequency(currentFrequency + ritOffset); // Receive, set VFO for RIT offset.
+    }
 #endif // RIT
 #ifdef TXLED
     digitalWrite(13, LOW);
