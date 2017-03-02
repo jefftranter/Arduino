@@ -1,9 +1,9 @@
 /*
 
-  Example Arduino sketch to control a PE4306 attenuator chip.
-  Tested with this board: https://www.sv1afn.com/rfattenuator.html
+  Example Arduino sketch to control a PE4302 or PE4304 attenuator
+  chip. The code has not been tested.
   
-  Jeff Tranter <tranter@pobox.com> 8 Jan 2015
+  Jeff Tranter <tranter@pobox.com> 2 Mar 2017
 
  */
  
@@ -26,18 +26,18 @@ void setup() {
 // The loop routine runs over and over again forever.
 void loop()
 {
-  int value;   // Attenuation value, 0 through 31.
+  int value;   // Attenuation value, 0 through 63.
   int ms = 1000; // How log to pause before next value (in msec)
 
   // Step though each attenuation level pausing for 1 second at each
   // value.
-  for (value = 0; value <= 31; value++) {
+  for (value = 0; value <= 63; value++) {
     //Serial.print(value); Serial.println(" dB");
     setAttenuator(value);
     delay(ms); // wait for a second before repeating
   }
 
-  for (value = 31; value >= 0; value--) {
+  for (value = 63; value >= 0; value--) {
     //Serial.print(value); Serial.println(" dB");
     setAttenuator(value);
     delay(ms); // wait for a second before repeating
@@ -46,11 +46,11 @@ void loop()
 
 /*
 
-  Set attenuation level of PE4306 Digital Step Attenuator in serial
-  mode. Level is in range 0 to 31 dB. Do not call this at a rate
-  faster than 25 KHz (every 0.05 msec). Should work with other PE430x
-  series chips with minor changes. The code runs slowly enough that
-  we do not need to add any delays.
+  Set attenuation level of PE4302 or PE4304 Digital Step Attenuator in
+  serial mode. Level is in range 0 to 63 dB. Do not call this at a
+  rate faster than 25 KHz (every 0.05 msec). Should work with other
+  PE430x series chips with minor changes. The code runs slowly enough
+  that we do not need to add any delays.
 
 */
 
@@ -59,7 +59,7 @@ void setAttenuator(int value)
   int level; // Holds level of DATA line when shifting
   
   // Check for value range of input.
-  if (value < 0 || value > 31)
+  if (value < 0 || value > 63)
     return;
 
   // Initial state
@@ -67,11 +67,7 @@ void setAttenuator(int value)
   digitalWrite(CLOCK,LOW);
   
   for (int bit = 5; bit >= 0; bit--) {
-    if (bit == 0) {
-      level = 0; // LSB is always zero
-    } else {
-      level = ((value << 1) >> bit) & 0x01; // Level is value of bit
-    }
+    level = ((value << 1) >> bit) & 0x01; // Level is value of bit
 
     digitalWrite(DATA, level); // Write data value
     digitalWrite(CLOCK, HIGH); // Toggle clock high and then low
