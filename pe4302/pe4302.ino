@@ -2,11 +2,11 @@
 
   Example Arduino sketch to control a PE4302 or PE4304 attenuator
   chip. The code has not been tested.
-  
+
   Jeff Tranter <tranter@pobox.com> 2 Mar 2017
 
  */
- 
+
 // Pins
 int LE = 2;
 int CLOCK = 3;
@@ -57,7 +57,7 @@ void loop()
 void setAttenuator(int value)
 {
   int level; // Holds level of DATA line when shifting
-  
+
   // Check for value range of input.
   if (value < 0 || value > 63)
     return;
@@ -65,7 +65,7 @@ void setAttenuator(int value)
   // Initial state
   digitalWrite(LE, LOW);
   digitalWrite(CLOCK,LOW);
-  
+
   for (int bit = 5; bit >= 0; bit--) {
     level = ((value << 1) >> bit) & 0x01; // Level is value of bit
 

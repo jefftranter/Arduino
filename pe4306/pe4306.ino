@@ -2,11 +2,11 @@
 
   Example Arduino sketch to control a PE4306 attenuator chip.
   Tested with this board: https://www.sv1afn.com/rfattenuator.html
-  
+
   Jeff Tranter <tranter@pobox.com> 8 Jan 2015
 
  */
- 
+
 // Pins
 int LE = 2;
 int CLOCK = 3;
@@ -57,7 +57,7 @@ void loop()
 void setAttenuator(int value)
 {
   int level; // Holds level of DATA line when shifting
-  
+
   // Check for value range of input.
   if (value < 0 || value > 31)
     return;
@@ -65,7 +65,7 @@ void setAttenuator(int value)
   // Initial state
   digitalWrite(LE, LOW);
   digitalWrite(CLOCK,LOW);
-  
+
   for (int bit = 5; bit >= 0; bit--) {
     if (bit == 0) {
       level = 0; // LSB is always zero

@@ -8,13 +8,13 @@
 
 #include <SoftwareSerial.h>
 #include <Encoder.h>
- 
+
 #define W_CLK 8             // Pin 8  - connect to AD9850 module word load clock pin (CLK)
 #define FQ_UD 9             // Pin 9  - connect to freq update pin (FQ)
 #define DATA 10             // Pin 10 - connect to serial data load pin (DATA)
 #define RESET 11            // Pin 11 - connect to reset pin (RST)
 #define BUTTON 12           // Pin 12 - connected to encoder push switch
- 
+
 #define pulseHigh(pin) { digitalWrite(pin, HIGH); digitalWrite(pin, LOW); }
 
 const int readings = 50;    // Number of readings to average over
@@ -56,7 +56,7 @@ void setup()
     pinMode(W_CLK, OUTPUT);
     pinMode(DATA, OUTPUT);
     pinMode(RESET, OUTPUT);
-   
+
     pulseHigh(RESET);
     pulseHigh(W_CLK);
     pulseHigh(FQ_UD);     // This pulse enables serial mode - datasheet page 12 figure 10

@@ -34,7 +34,7 @@
 #define RIT
 // Uncomment next line if you want the backlight screen blanking feature.
 #define BLANKING
-// Uncomment next line if you want the receiver to support generate
+// Uncomment next line if you want the receiver to support general
 // coverage and not just the 40 meter ham band (you will need to
 // disable the low pass filter if you the want to receive outside this
 // range). This can also be useful for testing the DDS oscillator.
@@ -672,7 +672,7 @@ void Splash()
 /*****
    This method is used to read the value from the R7, R8, C7 voltage
    divider circuit going to pin 26/A7 of the Arduino, process the
-   requiredcalcul ations, then display the voltage on the LCD.
+   required calculations, then display the voltage on the LCD.
    by Hank Ellis K5HDE.
    V1.0 14 June 2016 Implementation of the basic voltmeter
    V1.1 23 June 2016 Fixed bug that blanks the voltmeter when the frequency step is changed via the encoder pushbutton

@@ -21,12 +21,12 @@ serial.write(254); serial.write(145); serial.write(128);
 */
 
 #include <SoftwareSerial.h>
- 
+
 #define W_CLK 8       // Pin 8  - connect to AD9850 module word load clock pin (CLK)
 #define FQ_UD 9       // Pin 9  - connect to freq update pin (FQ)
 #define DATA 10       // Pin 10 - connect to serial data load pin (DATA)
 #define RESET 11      // Pin 11 - connect to reset pin (RST)
- 
+
 #define pulseHigh(pin) { digitalWrite(pin, HIGH); digitalWrite(pin, LOW); }
 
 double Start_Freq =  7000000; // Start frequency in Hz
@@ -64,7 +64,7 @@ void setup()
     pinMode(W_CLK, OUTPUT);
     pinMode(DATA, OUTPUT);
     pinMode(RESET, OUTPUT);
-   
+
     pulseHigh(RESET);
     pulseHigh(W_CLK);
     pulseHigh(FQ_UD);  // This pulse enables serial mode - datasheet page 12 figure 10
