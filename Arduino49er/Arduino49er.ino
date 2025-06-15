@@ -182,6 +182,9 @@ void setup() {
   eepromStartTime = millis();                                     // Need to keep track of EEPROM update time
 
   pinMode(ROTARYSWITCHPIN, INPUT_PULLUP);
+
+  r.begin();
+
 #ifdef RIT
   pinMode(RITPIN, INPUT_PULLUP);
 #endif // RIT
@@ -586,7 +589,7 @@ void ShowMarker(const char *c)
 
 /*****
   This method is used to change the number of Hertz associated with one click of the rotary encoder. Ten step
-  levels are provided and increasing or decreasing beyonds the array limits rolls around to the start/end
+  levels are provided and increasing or decreasing beyond the array limits rolls around to the start/end
   of the array.
 
   Argument list:
