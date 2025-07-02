@@ -21,7 +21,7 @@
   - Small code formatting changes and cleanup (e.g. fix compile warnings)
   - Idle timeout for LCD backlight.
 
-  Tested with Arduino IDE V-1.6.10
+  Tested with Arduino IDE 2.3.6.
 */
 
 // Uncomment next line if you want the Voltmeter display option enabled.
